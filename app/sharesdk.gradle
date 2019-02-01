@@ -1,0 +1,26 @@
+apply plugin: 'com.mob.sdk'
+
+// http://wiki.mob.com/sdk-share-android-3-0-0/
+MobSDK {
+    appKey ""
+    appSecret ""
+
+    ShareSDK {
+        // 是否启用Onekeyshare
+        gui true
+        // 平台配置信息
+        devInfo {
+            Wechat {
+                sortId 1
+                appId ""
+                appSecret ""
+            }
+            WechatMoments {
+                sortId 2
+                appId ""
+                appSecret ""
+            }
+        }
+    }
+
+}
