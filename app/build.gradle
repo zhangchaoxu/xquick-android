@@ -38,8 +38,8 @@ dependencies {
 
     // [dev and debug]
     // https://projectlombok.org/setup/android
-    compileOnly 'org.projectlombok:lombok:1.18.2'
-    annotationProcessor 'org.projectlombok:lombok:1.18.2'
+    compileOnly 'org.projectlombok:lombok:1.18.4'
+    annotationProcessor 'org.projectlombok:lombok:1.18.4'
 
     // leakcanary
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:1.6.2'
