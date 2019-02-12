@@ -19,3 +19,25 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# banner
+-keep class com.youth.banner.** {
+    *;
+}
+
+# sharesdk
+-keep class cn.sharesdk.**{*;}
+-keep class com.sina.**{*;}
+-keep class **.R$* {*;}
+-keep class **.R{*;}
+-keep class com.mob.**{*;}
+-keep class m.framework.**{*;}
+-dontwarn cn.sharesdk.**
+-dontwarn com.sina.**
+-dontwarn com.mob.**
+-dontwarn **.R$*
+
+# dbflow
+-keep class * extends com.raizlabs.android.dbflow.config.DatabaseHolder { *; }
+
+# EasyPhotos
+-keep class com.huantansheng.easyphotos.models.** { *; }

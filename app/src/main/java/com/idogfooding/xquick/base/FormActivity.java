@@ -1,6 +1,5 @@
 package com.idogfooding.xquick.base;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -18,14 +17,14 @@ import com.blankj.utilcode.util.ObjectUtils;
 import com.blankj.utilcode.util.ToastUtils;
 import com.chenenyu.router.Router;
 import com.huantansheng.easyphotos.EasyPhotos;
+import com.huantansheng.easyphotos.models.album.entity.Photo;
 import com.idogfooding.backbone.RequestCode;
 import com.idogfooding.backbone.photo.PhotoPickerAdapter;
 import com.idogfooding.backbone.photo.PhotoPickerEntity;
-import com.idogfooding.backbone.ui.BaseActivity;
 import com.idogfooding.backbone.utils.ViewUtils;
-import com.idogfooding.photopicker.GlideEngine;
-import com.idogfooding.photopicker.UCropUtils;
-import com.idogfooding.shouba.R;
+import com.idogfooding.xquick.android.R;
+import com.idogfooding.xquick.photopicker.GlideEngine;
+import com.idogfooding.xquick.photopicker.UCropUtils;
 import com.yalantis.ucrop.UCrop;
 
 import java.io.File;
@@ -44,7 +43,7 @@ import top.zibin.luban.OnCompressListener;
  *
  * @author Charles
  */
-public abstract class FormActivity extends BaseActivity {
+public abstract class FormActivity extends AppBaseActivity {
 
     // 表示已经开始编辑，在退出的时候提示
     protected boolean isEditing;
@@ -53,7 +52,7 @@ public abstract class FormActivity extends BaseActivity {
     protected boolean isPhotoCompressing;
     protected boolean isPhotoMultiCompressing;
     protected boolean isPhotoCropCompressing;
-    protected int multiCompressCount = 0; //多图压缩的序号
+    protected List<String> multiCompressedRawPaths; // 压缩原文件
     protected List<File> multiCompressedFiles; // 压缩结果
 
     // 多图片
@@ -97,7 +96,7 @@ public abstract class FormActivity extends BaseActivity {
             return;
         }
         photoAdapter = new PhotoPickerAdapter(null);
-        photoAdapter.setMorePhotoResId(R.mipmap.photo_add);
+        // photoAdapter.setMorePhotoResId(R.mipmap.photo_add);
         photoAdapter.setDeleteEnable(true);
         photoAdapter.setOnItemClickListener((adapter, view, position) -> {
             clearEditTextFocus();
@@ -115,7 +114,7 @@ public abstract class FormActivity extends BaseActivity {
                         .setCleanMenu(false)
                         .setGif(false)
                         .setCount(9)
-                        .setSelectedPhotoPaths(photoAdapter.getRealPhotos())
+                        .setSelectedPhotoPaths(photoAdapter.getRawPhotos())
                         .start(RequestCode.PHOTO_MULT_PICKER);
             } else {
                 // todo
@@ -139,21 +138,16 @@ public abstract class FormActivity extends BaseActivity {
         return isPhotoCompressing || isPhotoMultiCompressing || isPhotoCropCompressing;
     }
 
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        if (requestCode == RequestCode.LOCATION_CHOOSE && resultCode == Activity.RESULT_OK && intent != null) {
-            // 位置选择
-            PoiItem poi = intent.getParcelableExtra("PoiItem");
-            if (null != poi) {
-                onPositionReceived(poi);
-            }
-        } else if (resultCode == RESULT_OK && ((requestCode >= RequestCode.PHOTO_MULT_PICKER && requestCode <= RequestCode.PHOTO_MULT_PICKER10) || (requestCode >= RequestCode.PHOTO_MULT_PREVIEW && requestCode <= RequestCode.PHOTO_MULT_PREVIEW10))) {
+        if (resultCode == RESULT_OK && requestCode >= RequestCode.PHOTO_MULT_PICKER && requestCode <= RequestCode.PHOTO_MULT_PICKER10) {
             // 多图选择
             if (intent == null) {
                 Log.e("FormActivity", "data is null on requestCode=" + requestCode);
             } else {
-                List<String> photos = intent.getStringArrayListExtra(EasyPhotos.RESULT_PATHS);
-                if (photos == null) {
+                List<Photo> photos = intent.getParcelableArrayListExtra(EasyPhotos.RESULT_PHOTOS);
+                if (ObjectUtils.isEmpty(photos)) {
                     Log.e("FormActivity", "photos is empty on requestCode=" + requestCode);
                 } else {
                     onPhotoMultiSelectSuccess(requestCode, photos);
@@ -219,22 +213,16 @@ public abstract class FormActivity extends BaseActivity {
      *
      * @param photos
      */
-    protected void onPhotoMultiSelectSuccess(int requestCode, List<String> photos) {
-        List<PhotoPickerEntity> photoList = new ArrayList<>();
-        List<File> unCompressFiles = new ArrayList<>();
-        for (String photo : photos) {
-            if (!photo.startsWith("http://") && !photo.startsWith("https://")) {
-                unCompressFiles.add(new File(photo));
-                photoList.add(new PhotoPickerEntity(PhotoPickerEntity.TYPE_FILE, photo));
-            } else {
-                photoList.add(new PhotoPickerEntity(PhotoPickerEntity.TYPE_URL, photo));
-            }
+    protected void onPhotoMultiSelectSuccess(int requestCode, List<Photo> photos) {
+        List<String> unCompressFiles = new ArrayList<>();
+        for (Photo photo : photos) {
+            unCompressFiles.add(photo.path);
         }
         if (unCompressFiles.isEmpty()) {
             isPhotoMultiCompressing = false;
-            onPhotoMultiCompressSuccess(requestCode, new ArrayList<>());
+            onPhotoMultiCompressSuccess(requestCode, new ArrayList<>(), new ArrayList<>());
         } else {
-            multiCompressCount = 0;
+            multiCompressedRawPaths = new ArrayList<>();
             multiCompressedFiles = new ArrayList<>();
             Luban.with(this)
                     .load(unCompressFiles)
@@ -242,41 +230,43 @@ public abstract class FormActivity extends BaseActivity {
                     .filter(path -> !(TextUtils.isEmpty(path) || path.toLowerCase().endsWith(".gif")))
                     .setCompressListener(new OnCompressListener() {
                         @Override
-                        public void onStart() {
+                        public void onStart(int index, String rawFilePath) {
                             // 压缩开始前调用，可以在方法内启动 loading UI
                             isPhotoMultiCompressing = true;
+                            if (0 == index) {
+                                showLoading("压缩图片...");
+                            }
                         }
 
                         @Override
-                        public void onSuccess(File file) {
+                        public void onSuccess(int index, String rawFilePath, File file) {
                             // 压缩成功后调用，返回压缩后的图片文件
-                            multiCompressCount ++;
+                            multiCompressedRawPaths.add(rawFilePath);
                             multiCompressedFiles.add(file);
-                            if (multiCompressCount >= unCompressFiles.size()) {
-                                // 多图压缩完成
-                                isEditing = true;
-                                isPhotoMultiCompressing = false;
-                                onPhotoMultiCompressSuccess(requestCode, multiCompressedFiles);
-                                photoAdapter.setNewData(PhotoPickerEntity.filesToEntities(multiCompressedFiles));
-                            } else {
-                                // go on
-                            }
                         }
 
                         @Override
-                        public void onError(Throwable throwable) {
+                        public void onError(int index, String rawFilePath, Throwable throwable) {
                             // 当压缩过程出现问题时调用
-                            multiCompressCount ++;
-                            if (multiCompressCount >= unCompressFiles.size()) {
-                                // 多图压缩完成
-                                isEditing = true;
-                                isPhotoMultiCompressing = false;
-                                onPhotoMultiCompressSuccess(requestCode, multiCompressedFiles);
-                                photoAdapter.setNewData(PhotoPickerEntity.filesToEntities(multiCompressedFiles));
-                            }
                             ToastUtils.showShort("图片压缩失败:" + throwable.getMessage());
                             throwable.printStackTrace();
+                        }
 
+                        @Override
+                        public void onCompleted(int index, String rawFilePath) {
+                            if (index >= unCompressFiles.size()) {
+                                dismissLoading();
+                                // 多图压缩完成
+                                isEditing = true;
+                                isPhotoMultiCompressing = false;
+                                onPhotoMultiCompressSuccess(requestCode, multiCompressedRawPaths, multiCompressedFiles);
+                                photoAdapter.setNewData(PhotoPickerEntity.filesAndPathsToEntities(multiCompressedRawPaths, multiCompressedFiles));
+                            }
+                        }
+
+                        @Override
+                        public void onSysError(Throwable e) {
+                            dismissLoading();
                         }
                     }).launch();
         }
@@ -285,7 +275,7 @@ public abstract class FormActivity extends BaseActivity {
     /**
      * 多图获取并压缩成功
      */
-    protected void onPhotoMultiCompressSuccess(int requestCode, List<File> list) {
+    protected void onPhotoMultiCompressSuccess(int requestCode, List<String> rawPathList, List<File> list) {
 
     }
 
@@ -301,34 +291,40 @@ public abstract class FormActivity extends BaseActivity {
                 .filter(path -> !(TextUtils.isEmpty(path) || path.toLowerCase().endsWith(".gif")))
                 .setCompressListener(new OnCompressListener() {
                     @Override
-                    public void onStart() {
+                    public void onStart(int index, String rawFilePath) {
                         // 压缩开始前调用，可以在方法内启动 loading UI
                         isPhotoCompressing = true;
                     }
 
                     @Override
-                    public void onSuccess(File file) {
+                    public void onSuccess(int index, String rawFilePath, File file) {
                         // 压缩成功后调用，返回压缩后的图片文件
                         isEditing = true;
-                        isPhotoCompressing = false;
-                        onPhotoCropCompressSuccess(requestCode, file);
+                        onPhotoCropCompressSuccess(requestCode, rawFilePath, file);
                     }
 
                     @Override
-                    public void onError(Throwable throwable) {
+                    public void onError(int index, String rawFilePath, Throwable throwable) {
                         // 当压缩过程出现问题时调用
-                        isPhotoCompressing = false;
                         ToastUtils.showShort("单图片压缩失败:" + throwable.getMessage());
+                    }
+
+                    @Override
+                    public void onCompleted(int index, String rawFilePath) {
+                        isPhotoCompressing = false;
+                    }
+
+                    @Override
+                    public void onSysError(Throwable e) {
+                        isPhotoCompressing = false;
                     }
                 }).launch();
     }
 
     /**
      * 裁剪图获取并压缩成功
-     *
-     * @param file
      */
-    protected void onPhotoCropCompressSuccess(int requestCode, File file) {
+    protected void onPhotoCropCompressSuccess(int requestCode, String rawFilePath, File file) {
 
     }
 
@@ -344,24 +340,32 @@ public abstract class FormActivity extends BaseActivity {
                 .filter(path -> !(TextUtils.isEmpty(path) || path.toLowerCase().endsWith(".gif")))
                 .setCompressListener(new OnCompressListener() {
                     @Override
-                    public void onStart() {
+                    public void onStart(int index, String rawFilePath) {
                         // 压缩开始前调用，可以在方法内启动 loading UI
                         isPhotoCompressing = true;
                     }
 
                     @Override
-                    public void onSuccess(File file) {
+                    public void onSuccess(int index, String rawFilePath, File file) {
                         // 压缩成功后调用，返回压缩后的图片文件
                         isEditing = true;
-                        isPhotoCompressing = false;
-                        onPhotoCompressSuccess(requestCode, file);
+                        onPhotoCompressSuccess(requestCode, rawFilePath, file);
                     }
 
                     @Override
-                    public void onError(Throwable throwable) {
+                    public void onError(int index, String rawFilePath, Throwable throwable) {
                         // 当压缩过程出现问题时调用
-                        isPhotoCompressing = false;
                         ToastUtils.showShort("单图片压缩失败:" + throwable.getMessage());
+                    }
+
+                    @Override
+                    public void onCompleted(int index, String rawFilePath) {
+                        isPhotoCompressing = false;
+                    }
+
+                    @Override
+                    public void onSysError(Throwable e) {
+                        isPhotoCompressing = false;
                     }
                 }).launch();
     }
@@ -371,7 +375,7 @@ public abstract class FormActivity extends BaseActivity {
      *
      * @param file
      */
-    protected void onPhotoCompressSuccess(int requestCode, File file) {
+    protected void onPhotoCompressSuccess(int requestCode,  String rawFilePath, File file) {
 
     }
 
@@ -410,6 +414,18 @@ public abstract class FormActivity extends BaseActivity {
                 .setCleanMenu(false)
                 .setCount(1)
                 .start(RequestCode.PHOTO_CROP_PICKER);
+    }
+
+    /**
+     * 区域选择
+     *
+     * @param view
+     */
+    public void onLocationChooseClick(View view) {
+        int tag = ViewUtils.getTagValue(view, RequestCode.LOCATION_CHOOSE);
+        Router.build("LocationChoose")
+                .requestCode(tag)
+                .go(this);
     }
 
     /**

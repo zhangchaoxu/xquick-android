@@ -6,8 +6,8 @@ import android.os.Bundle;
 import android.os.Vibrator;
 
 import com.chenenyu.router.annotation.Route;
-import com.idogfooding.archivesmgr2pda.base.AppBaseActivity;
 import com.idogfooding.xquick.android.R;
+import com.idogfooding.xquick.base.AppBaseActivity;
 
 import butterknife.BindView;
 import cn.bingoogolapple.qrcode.core.QRCodeView;

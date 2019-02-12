@@ -1,24 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.idogfooding.xquick.android" >
 
+    <!-- 打电话 -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <!-- 定位 -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- 手机信息 -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <!-- 网络 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <!-- 摄像 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- 存储 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
     <application
+        android:name="com.idogfooding.xquick.App"
+        android:usesCleartextTraffic="true"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/logo"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/AppTheme" >
+        android:roundIcon="@mipmap/logo"
+        android:theme="@style/AppTheme"
+        tools:replace="android:name,android:label,android:theme"
+        tools:ignore="GoogleAppIndexingWarning">
+
+        <!-- 启动页 -->
         <activity
-            android:name=".MainActivity"
-            android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar" >
+            android:name="com.idogfooding.xquick.common.SplashActivity"
+            android:alwaysRetainTaskState="true"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 引导页 -->
+        <activity
+            android:name="com.idogfooding.xquick.common.IntroActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- 主页 -->
+        <activity
+            android:name="com.idogfooding.xquick.common.HomeActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait" />
+
+        <!-- 登录页 -->
+        <activity
+            android:name="com.idogfooding.xquick.user.LoginActivity"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait" />
+
+        <!-- 二维码扫描页 -->
+        <activity
+            android:name="com.idogfooding.xquick.common.ScannerActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- 关于页 -->
+        <activity
+            android:name="com.idogfooding.xquick.common.AboutActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- 设置页 -->
+        <activity
+            android:name="com.idogfooding.xquick.common.SettingsActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- 内置浏览器页 -->
+        <activity
+            android:name="com.idogfooding.xquick.common.BrowserActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- 高德定位相关 -->
+        <service android:name="com.amap.api.location.APSService" />
+        <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="1fcad4ae478bb8e6abcc9dd85f24a1cc" />
+
+        <!-- 图片裁剪 -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+
     </application>
 
 </manifest>

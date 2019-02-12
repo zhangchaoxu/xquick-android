@@ -1,5 +1,14 @@
+// load local.properties
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
 android {
     compileSdkVersion 28
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 
     dexOptions {
         javaMaxHeapSize "8g" //specify the heap size for the dex process
@@ -11,16 +20,16 @@ android {
     }
 
     defaultConfig {
-        applicationId app.packageName
+        applicationId properties.getProperty("packageName")
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode app.versionCode
-        versionName app.versionName
+        versionCode Integer.valueOf(properties.getProperty("versionCode"))
+        versionName properties.getProperty("versionName")
 
         multiDexEnabled true
 
         manifestPlaceholders = [
-                PACKAGE_NAME: app.packageName
+                PACKAGE_NAME: properties.getProperty("packageName")
         ]
 
         javaCompileOptions {
@@ -37,16 +46,16 @@ android {
     // sign the application
     signingConfigs {
         release {
-            storeFile file(app.releaseStoreFile)
-            storePassword app.releaseStorePassword
-            keyAlias app.releaseKeyAlias
-            keyPassword app.releaseKeyPassword
+            storeFile file(properties.getProperty("releaseStoreFile"))
+            storePassword properties.getProperty("releaseStorePassword")
+            keyAlias properties.getProperty("releaseKeyAlias")
+            keyPassword properties.getProperty("releaseKeyPassword")
         }
         debug {
-            storeFile file(app.debugStoreFile)
-            storePassword app.debugStorePassword
-            keyAlias app.debugKeyAlias
-            keyPassword app.debugKeyPassword
+            storeFile file(properties.getProperty("debugStoreFile"))
+            storePassword properties.getProperty("debugStorePassword")
+            keyAlias properties.getProperty("debugKeyAlias")
+            keyPassword properties.getProperty("debugKeyPassword")
         }
     }
 
